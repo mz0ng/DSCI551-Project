@@ -60,7 +60,7 @@ def main(argvs):
             if ind1 == -1 or ind2 == -1:
                 raise ValueError(
                     'Please specify path to a file instead of directory.')
-            elif not os.path.exists(argvs[3][:ind3]):
+            elif not os.path.exists(argvs[2][:ind3]):
                 raise ValueError(
                     'Please specify a valid location to save your file.')
             else:
@@ -72,7 +72,7 @@ def main(argvs):
     elif argvs[0] == '-mkdir':
         if len(argvs) != 2:
             raise ValueError(
-                'Please follow the format: -mkdir [path to directory on server')
+                'Please follow the format: -mkdir [path to directory on server]')
         else:
             f = argvs[1]
             ind = f.rfind('.')
@@ -82,7 +82,7 @@ def main(argvs):
     elif argvs[0] == '-rmdir':
         if len(argvs) != 2:
             raise ValueError(
-                'Please follow the format: -rmdir [path to directory on server')
+                'Please follow the format: -rmdir [path to directory on server]')
         else:
             f = argvs[1]
             ind = f.rfind('.')
@@ -92,7 +92,7 @@ def main(argvs):
     elif argvs[0] == '-cat':
         if len(argvs) != 2:
             raise ValueError(
-                'Please follow the format: -cat [path to file on server')
+                'Please follow the format: -cat [path to file on server]')
         else:
             f = argvs[1]
             ind = f.rfind('.')
