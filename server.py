@@ -5,9 +5,12 @@ from filesplit.split import Split
 import inspect
 import uuid
 from DataNode import read_from_node, write_to_node
+import sys
+import math
+import shutil
 
 # max block size is 50MB
-max_size = 20000000
+max_size = 52428800
 
 
 def insert_dict(d, keys, keyvalue):
@@ -19,6 +22,7 @@ def insert_dict(d, keys, keyvalue):
 
 
 def drop_dict(d, keys, fname):
+    print(keys)
     if len(keys) == 1:
         del d[keys[0]][fname]
     else:
@@ -56,7 +60,7 @@ def ls(dir):
     # if it's called by the cat or put function, return the dict object
     curframe = inspect.currentframe()
     calframe = inspect.getouterframes(curframe, 2)
-    if calframe[1][3] == 'cat':
+    if calframe[1][3] == 'cat' or calframe[1][3] == 'fs':
         return d
     # list items in target dir
     ls = list(d.keys())
@@ -90,7 +94,7 @@ def rm(path):
         fname = path[ind+1:]
         ftype = fname.split('.')[1]
         blocks = d[fname]
-        for b in blocks:
+        for b in blocks[:-1]:
             for i in b[1:]:
                 os.remove('DataNode'+i+'/'+b[0]+'.'+ftype)
     else:
@@ -108,6 +112,15 @@ def put(file, newname):
     # if directory exists, start data transfer
     if isinstance(d, dict):
         f_name = newname[ind+1:]
+        f_size = os.path.getsize(file)
+        if f_size < 1000:
+            size = str(f_size)+' B'
+        else:
+            size_name = ("B", "KB", "MB", "GB", "TB")
+            i = int(math.floor(math.log(f_size, 1000)))
+            p = math.pow(1000, i)
+            approx = round(f_size / p, 2)
+            size = str(approx)+' '+size_name[i]
         blocks = []
         # if file size exceeds block size, split the file into chunks
         if os.path.getsize(file) > max_size:
@@ -128,6 +141,7 @@ def put(file, newname):
                     s2, loc2 = ls[1]
                     write_to_node(uid, line.split(',')[0], loc2, False)
                     blocks.append([uid, loc1, loc2])
+            shutil.rmtree('temp')
         # if chunking is not needed, generate one id for the entire file and create a copy of it on server
         else:
             uid = str(uuid.uuid4())
@@ -141,6 +155,8 @@ def put(file, newname):
             s2, loc2 = ls[1]
             write_to_node(uid, file, loc2, True)
             blocks.append([uid, loc1, loc2])
+        # add file size as the last list element
+        blocks.append([size])
         # update metadata
         v = {f_name: blocks}
         m = json.load(open('NameNode/records.json'))
@@ -205,8 +221,11 @@ def rmdir(dir):
             ind = dir.rfind('/')
             f_name = dir[ind+1:]
             m = json.load(open('NameNode/records.json'))
-            segs = dir[:ind].split('/')
-            drop_dict(m, segs[1:], f_name)
+            if ind == 0:
+                del m[f_name]
+            else:
+                segs = dir[:ind].split('/')
+                drop_dict(m, segs[1:], f_name)
             with open('NameNode/records.json', 'w') as f:
                 f.write(json.dumps(m, indent=4))
     else:
@@ -226,11 +245,26 @@ def cat(file):
             blocks = d[file[ind1+1:]]
             # concatenate contents in order and return the string
             content = ''
-            for b in blocks:
+            for b in blocks[:-1]:
                 content += read_from_node(b[0], b[1:], f_type)
             return content
     # if parent dir is empty or any dir in the path does not exist, return error message
     return ("Error: File does not exist.")
+
+
+def fs(file):
+    # check if parent directory exists
+    ind1 = file.rfind('/')
+    d = ls(file[:ind1])
+    if isinstance(d, dict):
+        # check if file exists
+        if file[ind1+1:] in d.keys():
+            # get list of lists which store size of file on server
+            blocks = d[file[ind1+1:]]
+            print(blocks[-1][0])
+    # if parent dir is empty or any dir in the path does not exist, return error message
+    else:
+        return ("Error: File does not exist.")
 
 
 if __name__ == "__main__":
@@ -251,16 +285,17 @@ if __name__ == "__main__":
     port = 5050
     ip_addr = socket.gethostbyname(socket.gethostname())
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((ip_addr, port))
     server.listen()
     while True:
         conn, addr = server.accept()
         connected = True
         while connected:
-            msg_len = conn.recv(30).decode('utf-8')
+            msg_len = conn.recv(30).decode('utf-8', 'ignore')
             if msg_len:
                 msg_len = int(msg_len)
-                msg = conn.recv(msg_len).decode('utf-8')
+                msg = conn.recv(msg_len).decode('utf-8', 'ignore')
                 if msg:
                     segs = msg.split(' ')
                     comm = segs[0]
@@ -278,6 +313,8 @@ if __name__ == "__main__":
                         resp = rmdir(segs[1])
                     elif comm == '-cat':
                         resp = cat(segs[1])
+                    elif comm == '-fs':
+                        resp = fs(segs[1])
                     connected = False
                     if not resp:
                         msg_len = '-1'.encode('utf-8')
@@ -289,6 +326,5 @@ if __name__ == "__main__":
                         msg_len += b' '*(30-len(msg_len))
                         conn.send(msg_len)
                         conn.send(msg)
-        # break
-    conn.close()
-print('connection closed')
+                    conn.close()
+                    sys.exit()
