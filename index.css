@@ -1,0 +1,85 @@
+#treeView {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 18px;
+  position: absolute;
+  left: 2%;
+}
+.scrollable {
+  height: 70vh;
+  overflow: auto;
+  overflow-y: scroll;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  width: calc(35vw);
+  position: absolute;
+  top: 20%;
+  left: 12%;
+}
+.scrollable::-webkit-scrollbar {
+  width: 8px;
+  background-color: #f5f5f5;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background-color: #aaa;
+  border-radius: 10px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+#edfs {
+  position: absolute;
+  top: 19%;
+  left: 55%;
+  font-size: 20px;
+}
+#pathSelector {
+  height: 15vh;
+  width: calc(40vw);
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  position: absolute;
+  top: 25%;
+  left: 53%;
+  overflow: auto;
+}
+#pathSelector p.path {
+  font-size: 18px;
+  position: absolute;
+  left: 2%;
+}
+#local {
+  position: absolute;
+  top: 44%;
+  left: 55%;
+  font-size: 20px;
+}
+#localPath {
+  height: 15vh;
+  width: calc(40vw);
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  position: absolute;
+  top: 50%;
+  left: 53%;
+  overflow: auto;
+}
+#localPath p.path {
+  font-size: 18px;
+  position: absolute;
+  left: 2%;
+}
+.button {
+  position: absolute;
+  top: 70%;
+  left: 65%;
+  padding: 8px 16px;
+  background-color: sienna;
+  color: white;
+  font-size: 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

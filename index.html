@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="index.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.17.0/full/pyodide.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <h1>EDFS Interface</h1>
+
+    <div id="treeViewContainer" class="scrollable">
+        <br>
+        <div id="treeView">
+        </div>
+    </div>
+
+    <div class="container">
+        <p id='edfs'>EDFS:</p>
+        <div id="pathSelector">
+          <p class="epath" id='epath' contentEditable="true">Click on a folder/file to select. To upload files, manually append desired file name to the path.</p>
+        </div>
+        <p id='local'>Local System:</p>
+        <div id="localPath">
+            <p class="lpath" id='lpath' contentEditable="true">Manually input path to your destination here. For files, also add the desired file name to the path.</p>
+        </div>
+        <button class="button" onclick="buttonResponse()">fill in the paths first</button>
+      </div>
+    <script src="index.js"></script>
+    <script>  
+        displayJsonTree();
+    </script>
+    
+</body>
+</html>
