@@ -2,7 +2,6 @@ import socket
 import os
 import json
 from filesplit.split import Split
-import inspect
 import uuid
 from DataNode import read_from_node, write_to_node
 import sys
@@ -13,6 +12,7 @@ import shutil
 max_size = 52428800
 
 
+# add new key-value pairs to the nested dictionary
 def insert_dict(d, keys, keyvalue):
     if len(keys) == 1:
         for k, v in keyvalue.items():
@@ -21,14 +21,15 @@ def insert_dict(d, keys, keyvalue):
         insert_dict(d[keys[0]], keys[1:], keyvalue)
 
 
+# remove an item from the nested dictionary
 def drop_dict(d, keys, fname):
-    print(keys)
     if len(keys) == 1:
         del d[keys[0]][fname]
     else:
         drop_dict(d[keys[0]], keys[1:], fname)
 
 
+# check if a directory exists in the system
 def find_directory(path):
     f = open('NameNode/records.json')
     d = json.load(f)
@@ -43,35 +44,25 @@ def find_directory(path):
 
 
 def ls(dir):
-    # dive into the structure and try to find the directory
-    # return error message if it or any intermediate directory does not exist
-    f = open('NameNode/records.json')
-    d = json.load(f)
-    if dir != '/':
-        segs = dir.split('/')
-        for i in segs[1:]:
-            if i in d:
-                d = d[i]
-            else:
-                return ("Error: Directory does not exist.")
-    # if nothing is in the directory, return nothing
-    if len(d) == 0:
-        return
-    # if it's called by the cat or put function, return the dict object
-    curframe = inspect.currentframe()
-    calframe = inspect.getouterframes(curframe, 2)
-    if calframe[1][3] == 'cat' or calframe[1][3] == 'fs':
+    d = find_directory(dir)
+    # if directory exists
+    if isinstance(d, dict):
+        # if nothing is in the directory, return nothing
+        if len(d) == 0:
+            return
+        # list items in target dir
+        ls = list(d.keys())
+        s = ls[0]
+        for i in ls[1:]:
+            s += '\t'+i
+        return s
+    # if not return error message
+    else:
         return d
-    # list items in target dir
-    ls = list(d.keys())
-    s = ls[0]
-    for i in ls[1:]:
-        s += '\t'+i
-    return s
 
 
 def rm(path):
-    # check if file exists
+    # check if parent dir exists
     ind = path.rfind('/')
     if ind == 0:
         dir = '/'
@@ -79,7 +70,7 @@ def rm(path):
         dir = path[:ind]
     fname = path[ind+1:]
     d = find_directory(dir)
-    # if file exists
+    # if dir exists and file is in it
     if isinstance(d, dict) and len(d) > 0 and fname in d.keys():
         # delete record from metadata
         m = json.load(open('NameNode/records.json'))
@@ -111,6 +102,7 @@ def put(file, newname):
     d = find_directory(dir)
     # if directory exists, start data transfer
     if isinstance(d, dict):
+        # get file size
         f_name = newname[ind+1:]
         f_size = os.path.getsize(file)
         if f_size < 1000:
@@ -175,6 +167,7 @@ def put(file, newname):
 
 
 def get(file, newname):
+    # get content of file and save it as file on local device
     content = cat(file)
     with open(newname, 'w') as f:
         f.write(content)
@@ -235,7 +228,7 @@ def rmdir(dir):
 def cat(file):
     # check if parent directory exists
     ind1 = file.rfind('/')
-    d = ls(file[:ind1])
+    d = find_directory(file[:ind1])
     if isinstance(d, dict):
         # check if file exists
         if file[ind1+1:] in d.keys():
@@ -255,20 +248,22 @@ def cat(file):
 def fs(file):
     # check if parent directory exists
     ind1 = file.rfind('/')
-    d = ls(file[:ind1])
+    d = find_directory(file[:ind1])
     if isinstance(d, dict):
         # check if file exists
         if file[ind1+1:] in d.keys():
             # get list of lists which store size of file on server
             blocks = d[file[ind1+1:]]
-            print(blocks[-1][0])
+            return(blocks[-1][0])
+        else:
+            return ("Error: File does not exist.")
     # if parent dir is empty or any dir in the path does not exist, return error message
     else:
         return ("Error: File does not exist.")
 
 
 if __name__ == "__main__":
-    # initialize the system
+    # initialize the system if necessary
     cwd = os.getcwd()
     if not os.path.exists(cwd+'/NameNode'):
         os.mkdir('NameNode')
@@ -288,6 +283,7 @@ if __name__ == "__main__":
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((ip_addr, port))
     server.listen()
+    # wait for messgaes
     while True:
         conn, addr = server.accept()
         connected = True
@@ -326,5 +322,6 @@ if __name__ == "__main__":
                         msg_len += b' '*(30-len(msg_len))
                         conn.send(msg_len)
                         conn.send(msg)
+                    # shutdown the server when the command is handled
                     conn.close()
                     sys.exit()
