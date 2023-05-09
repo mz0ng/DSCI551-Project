@@ -7,6 +7,7 @@ def write_to_node(block, file, datanode, local):
     # if file is not split into chunks
     if local:
         path = file
+    # if it is, get temporary blocks from the temp folder
     else:
         path = os.getcwd()+'/temp/'+file
     with open(path, 'r') as f:
@@ -16,6 +17,7 @@ def write_to_node(block, file, datanode, local):
 
 
 def read_from_node(block, datanodes, type):
+    # get content from on block
     for i in datanodes:
         try:
             with open("DataNode"+i+"/"+block+"."+type) as f:
